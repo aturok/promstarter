@@ -1,0 +1,10 @@
+groups:
+- name: alert.rules
+  rules:
+  - alert: SiteDown
+    expr: probe_success == 0
+    for: 30s
+    labels:
+      severity: "critical"
+    annotations:
+      message: "Site {{ $labels.instance }} is down"

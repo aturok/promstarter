@@ -1,0 +1,19 @@
+#!/bin/bash 
+set -eu
+
+TARGET="/var/monitoring"
+GIT_DIR="~/monitoring.git"
+BRANCH_1="master"
+
+while read oldrev newrev ref
+do
+        # only checking out the master (or whatever branch you would like to deploy)
+        if [[ $ref = refs/heads/"$BRANCH_1" ]];
+        then
+                echo "Ref $ref received. Deploying ${BRANCH_1} branch to production..."
+                git --work-tree="$TARGET" --git-dir="$GIT_DIR" checkout -f $BRANCH_1
+                cd $TARGET && docker-compose down && docker-compose up --no-recreate -d
+        else
+                echo "Ref $ref received. Not ${BRANCH_1}. Doing nothing"
+        fi
+done

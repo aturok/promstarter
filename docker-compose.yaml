@@ -1,0 +1,62 @@
+version: "3"
+networks:
+  mainnet:
+    driver: bridge
+  
+services:  
+  prober:
+    container_name: prober
+    image: prom/blackbox-exporter
+    volumes:
+      - ./config/prober.yml:/prober.yml
+    networks: 
+      - mainnet
+    expose:
+      - "9115"
+    command:
+      - '--config.file=/prober.yml'
+
+  alertmanager-bot:
+    container_name: alertmanager-bot
+    command:
+      - --alertmanager.url=http://alertmanager:9093
+      - --log.level=info
+      - --store=bolt
+      - --bolt.path=/data/bot.db
+    environment:
+      TELEGRAM_ADMIN: ${TELEGRAM_ADMIN}
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+    image: metalmatze/alertmanager-bot:0.4.2
+    expose:
+      - "8080"
+    restart: always
+    networks: 
+      - mainnet
+    volumes:
+    - /var/alertbotdata:/data
+
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager
+    volumes:
+      - ./config/alertmanager.yml:/alertmanager.yml
+    networks: 
+      - mainnet
+    command:
+      - '--config.file=/alertmanager.yml'
+    expose:
+      - "9093"
+    ports:
+      - 9093:9093
+
+  monitoring:
+    container_name: monitoring
+    image: prom/prometheus
+    networks: 
+      - mainnet
+    volumes:
+      - ./config/:/etc/prometheus/
+    depends_on:
+      - prober
+    ports:
+      - 9090:9090
